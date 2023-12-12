@@ -69,7 +69,6 @@ def set_budget(message):
         # Close the database connection
         close_database_connection(conn, cursor)
 
-
 # Function to handle the /addexpense command
 @bot.message_handler(commands=['addexpense'])
 def add_expense(message):
@@ -91,15 +90,19 @@ def add_expense(message):
         if result:
             _, _, _, goal_amount, current_amount = result
 
-            # Update the current amount with the new expense
-            current_amount += amount
+            # Check if the expense exceeds the budget
+            if current_amount + amount > goal_amount:
+                reply_text = f"Error: Expense of ${amount:.2f} exceeds the budget for '{category}'"
+            else:
+                # Update the current amount with the new expense
+                current_amount += amount
 
-            # Update the budgets table
-            cursor.execute("UPDATE budgets SET current_amount = ? WHERE user_id = ? AND category = ?",
-                           (current_amount, user_id, category))
-            conn.commit()
+                # Update the budgets table
+                cursor.execute("UPDATE budgets SET current_amount = ? WHERE user_id = ? AND category = ?",
+                               (current_amount, user_id, category))
+                conn.commit()
 
-            reply_text = f"Expense of ${amount:.2f} added to '{category}' successfully!"
+                reply_text = f"Expense of ${amount:.2f} added to '{category}' successfully!"
         else:
             reply_text = f"You don't have a budget set for '{category}'. Please set a budget first."
 
