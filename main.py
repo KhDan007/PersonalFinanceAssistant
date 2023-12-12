@@ -153,6 +153,43 @@ def check_budget(message):
         close_database_connection(conn, cursor)
 
 
+# Function to handle the /balance command
+@bot.message_handler(commands=['balance'])
+def check_balance(message):
+    conn, cursor = None, None  # Initialize variables
+    try:
+        user_id = message.from_user.id
+        # Extract parameters from the command
+        _, category = message.text.split(' ', 1)
+        category = category.strip()
+
+        # Create a new database connection and cursor
+        conn, cursor = get_database_connection()
+
+        # Check if the category exists in the budgets table
+        cursor.execute("SELECT * FROM budgets WHERE user_id = ? AND category = ?", (user_id, category))
+        result = cursor.fetchone()
+
+        if result:
+            _, _, _, goal_amount, current_amount = result
+            remaining_amount = goal_amount - current_amount
+            reply_text = f"Balance for '{category}': ${remaining_amount:.2f} out of ${goal_amount:.2f}"
+        else:
+            reply_text = f"You don't have a budget set for '{category}'. Please set a budget first."
+
+        bot.reply_to(message, reply_text)
+
+    except IndexError:
+        bot.reply_to(message, "Please specify a category. Example: /balance groceries")
+
+    except sqlite3.Error as e:
+        bot.reply_to(message, f"An error occurred: {e}")
+
+    finally:
+        # Close the database connection
+        close_database_connection(conn, cursor)
+
+
 # Start the bot
 print('the bot is running')
 bot.polling()
